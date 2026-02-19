@@ -16,7 +16,7 @@ pipeline {
         stage('Git Checkout') {
             steps {
                 git branch: 'main',
-                    url: 'https://github.com/Anil7749/Sample-Nodejs.git'
+                    url: 'https://github.com/Anil7749/sampleNodejs.git'
             }
         }
 
@@ -56,6 +56,9 @@ pipeline {
                     sh '''
                     docker tag $IMAGE_NAME:$IMAGE_TAG $IMAGE_URI
                     docker push $IMAGE_URI
+
+                    docker tag $IMAGE_NAME:$IMAGE_TAG $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$IMAGE_NAME:latest
+                    docker push $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$IMAGE_NAME:latest
                     '''
                 }
             }

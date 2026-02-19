@@ -6,7 +6,7 @@ pipeline {
         REGION       = 'us-east-1'
         IMAGE_NAME   = 'nodejs-dev-repo'
         IMAGE_TAG    = "${BUILD_NUMBER}"
-        IMAGE_URI    = "533267129063.dkr.ecr.us-east-1.amazonaws.com/nodejs-dev:${BUILD_NUMBER}"
+        IMAGE_URI    = "533267129063.dkr.ecr.us-east-1.amazonaws.com/nodejs-dev-repo:${BUILD_NUMBER}"
         CLUSTER_NAME = 'nodejs-cluster'
         SERVICE_NAME = 'node-js-dev-service'
     }

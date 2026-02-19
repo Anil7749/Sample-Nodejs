@@ -4,11 +4,11 @@ pipeline {
     environment {
         ACCOUNT_ID   = '533267129063'
         REGION       = 'us-east-1'
-        IMAGE_NAME   = 'nodejs-stage'
+        IMAGE_NAME   = 'nodejs-stage-repo'
         IMAGE_TAG    = "${BUILD_NUMBER}"
-        IMAGE_URI    = "533267129063.dkr.ecr.us-east-1.amazonaws.com/nodejs-stage:${BUILD_NUMBER}"
+        IMAGE_URI    = "533267129063.dkr.ecr.us-east-1.amazonaws.com/nodejs-stage-repo:${BUILD_NUMBER}"
         CLUSTER_NAME = 'nodejs-cluster'
-        SERVICE_NAME = 'node-js-stage-service'
+        SERVICE_NAME = 'nodejs-stage-service'
     }
 
     stages {

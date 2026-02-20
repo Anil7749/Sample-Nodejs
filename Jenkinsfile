@@ -22,17 +22,23 @@ pipeline {
             steps {
                 script {
                     if (env.BRANCH_NAME == 'dev') {
-                        env.IMAGE_NAME   = 'nodejs-dev-repo'
-                        env.IMAGE_URI    = "533267129063.dkr.ecr.us-east-1.amazonaws.com/nodejs-dev-repo:${IMAGE_TAG}"
-                        env.SERVICE_NAME = 'nodejs-dev-service'
+                        env.IMAGE_NAME     = 'nodejs-dev-repo'
+                        env.IMAGE_URI      = "533267129063.dkr.ecr.us-east-1.amazonaws.com/nodejs-dev-repo:${IMAGE_TAG}"
+                        env.SERVICE_NAME   = 'nodejs-dev-service'
+                        env.TASK_FAMILY    = 'nodejs-dev-td'
+                        env.CONTAINER_NAME = 'nodejs-dev-container'
                     } else if (env.BRANCH_NAME == 'stage') {
-                        env.IMAGE_NAME   = 'nodejs-stage-repo'
-                        env.IMAGE_URI    = "533267129063.dkr.ecr.us-east-1.amazonaws.com/nodejs-stage-repo:${IMAGE_TAG}"
-                        env.SERVICE_NAME = 'nodejs-stage-service'
+                        env.IMAGE_NAME     = 'nodejs-stage-repo'
+                        env.IMAGE_URI      = "533267129063.dkr.ecr.us-east-1.amazonaws.com/nodejs-stage-repo:${IMAGE_TAG}"
+                        env.SERVICE_NAME   = 'nodejs-stage-service'
+                        env.TASK_FAMILY    = 'nodejs-stage-td'
+                        env.CONTAINER_NAME = 'nodejs-stage-container'
                     } else if (env.BRANCH_NAME == 'prod') {
-                        env.IMAGE_NAME   = 'nodejs-prod-repo'
-                        env.IMAGE_URI    = "533267129063.dkr.ecr.us-east-1.amazonaws.com/nodejs-prod-repo:${IMAGE_TAG}"
-                        env.SERVICE_NAME = 'nodejs-prod-service'
+                        env.IMAGE_NAME     = 'nodejs-prod-repo'
+                        env.IMAGE_URI      = "533267129063.dkr.ecr.us-east-1.amazonaws.com/nodejs-prod-repo:${IMAGE_TAG}"
+                        env.SERVICE_NAME   = 'nodejs-prod-service'
+                        env.TASK_FAMILY    = 'nodejs-prod-td'
+                        env.CONTAINER_NAME = 'nodejs-prod-container'
                     }
                 }
             }
@@ -99,9 +105,26 @@ pipeline {
                     credentialsId: 'aws-credentials'
                 ]]) {
                     sh '''
+                    aws ecs register-task-definition \
+                        --family $TASK_FAMILY \
+                        --container-definitions "[{\"name\":\"$CONTAINER_NAME\",\"image\":\"$IMAGE_URI\",\"portMappings\":[{\"containerPort\":3000}]}]" \
+                        --requires-compatibilities FARGATE \
+                        --network-mode awsvpc \
+                        --cpu 512 \
+                        --memory 1024 \
+                        --execution-role-arn arn:aws:iam::$ACCOUNT_ID:role/ecsTaskExecutionRole \
+                        --region $REGION
+
+                    TASK_REVISION=$(aws ecs describe-task-definition \
+                        --task-definition $TASK_FAMILY \
+                        --region $REGION \
+                        --query taskDefinition.revision \
+                        --output text)
+
                     aws ecs update-service \
                         --cluster $CLUSTER_NAME \
                         --service $SERVICE_NAME \
+                        --task-definition $TASK_FAMILY:$TASK_REVISION \
                         --force-new-deployment \
                         --region $REGION
                     '''

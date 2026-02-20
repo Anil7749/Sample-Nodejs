@@ -4,19 +4,37 @@ pipeline {
     environment {
         ACCOUNT_ID   = '533267129063'
         REGION       = 'us-east-1'
-        IMAGE_NAME   = 'nodejs-repo'
-        IMAGE_TAG    = "${BUILD_NUMBER}"
-        IMAGE_URI    = "533267129063.dkr.ecr.us-east-1.amazonaws.com/nodejs-repo:${BUILD_NUMBER}"
         CLUSTER_NAME = 'nodejs-cluster'
-        SERVICE_NAME = 'node-js-service'
+        IMAGE_TAG    = "${BUILD_NUMBER}"
     }
 
     stages {
 
         stage('Git Checkout') {
             steps {
-                git branch: 'main',
+                git branch: env.BRANCH_NAME,
+                    credentialsId: 'github-credentials',
                     url: 'https://github.com/Anil7749/Sample-Nodejs.git'
+            }
+        }
+
+        stage('Set Environment Variables') {
+            steps {
+                script {
+                    if (env.BRANCH_NAME == 'dev') {
+                        env.IMAGE_NAME   = 'nodejs-dev-repo'
+                        env.IMAGE_URI    = "533267129063.dkr.ecr.us-east-1.amazonaws.com/nodejs-dev-repo:${IMAGE_TAG}"
+                        env.SERVICE_NAME = 'nodejs-dev-service'
+                    } else if (env.BRANCH_NAME == 'stage') {
+                        env.IMAGE_NAME   = 'nodejs-stage-repo'
+                        env.IMAGE_URI    = "533267129063.dkr.ecr.us-east-1.amazonaws.com/nodejs-stage-repo:${IMAGE_TAG}"
+                        env.SERVICE_NAME = 'nodejs-stage-service'
+                    } else if (env.BRANCH_NAME == 'prod') {
+                        env.IMAGE_NAME   = 'nodejs-prod-repo'
+                        env.IMAGE_URI    = "533267129063.dkr.ecr.us-east-1.amazonaws.com/nodejs-prod-repo:${IMAGE_TAG}"
+                        env.SERVICE_NAME = 'nodejs-prod-service'
+                    }
+                }
             }
         }
 
@@ -61,6 +79,16 @@ pipeline {
                     docker push $ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$IMAGE_NAME:latest
                     '''
                 }
+            }
+        }
+
+        stage('Approval for Prod') {
+            when {
+                expression { env.BRANCH_NAME == 'prod' }
+            }
+            steps {
+                input message: 'Deploy to Production? Click Approve to continue.',
+                      ok: 'Approve'
             }
         }
 

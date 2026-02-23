@@ -93,20 +93,37 @@ pipeline {
         }
 
         stage('Deploy to ECS') {
-            steps {
-                withCredentials([[
-                    $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'aws-credentials'
-                ]]) {
-                    sh '''
-                    aws ecs update-service \
-                        --cluster $CLUSTER_NAME \
-                        --service $SERVICE_NAME \
-                        --force-new-deployment \
-                        --region $REGION
-                    '''
-                }
-            }
+           steps {
+             withCredentials([[
+                $class: 'AmazonWebServicesCredentialsBinding',
+                credentialsId: 'aws-credentials'
+             ]]) {
+                sh """
+                CONTAINER_DEF='[{"name":"'"\$CONTAINER_NAME"'","image":"'"\$IMAGE_URI"'","portMappings":[{"containerPort":3000}]}]'
+
+                aws ecs register-task-definition \
+                 --family \$TASK_FAMILY \
+                 --container-definitions "\$CONTAINER_DEF" \
+                 --requires-compatibilities FARGATE \
+                 --network-mode awsvpc \
+                 --cpu 512 \
+                 --memory 1024 \
+                 --execution-role-arn arn:aws:iam::\$ACCOUNT_ID:role/ecsTaskExecutionRole \
+                 --region \$REGION
+
+                TASK_REVISION=\$(aws ecs describe-task-definition \
+                 --task-definition \$TASK_FAMILY \
+                 --region \$REGION \
+                 --query taskDefinition.revision \
+                 --output text)
+
+                aws ecs update-service \
+                 --cluster \$CLUSTER_NAME \
+                 --service \$SERVICE_NAME \
+                 --task-definition \$TASK_FAMILY:\$TASK_REVISION \
+                 --force-new-deployment \
+                 --region \$REGION
+                """
         }
     }
 }
